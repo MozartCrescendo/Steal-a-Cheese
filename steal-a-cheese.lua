@@ -30,51 +30,81 @@ local levelCoordinates = {
 
 local activeFarms = {}
 local activeFarmThreads = {}
-local antiGameplayPausedEnabled = true
-local antiPauseConnections = {}
+local selectedRarities = {}
+local activeRarityFilterCount = 0
 
-local function setAntiGameplayPaused(state)
-    antiGameplayPausedEnabled = state
+-- Rarity lookup tables
+local uploadedIdRarityMap = {}
 
-    for _, conn in ipairs(antiPauseConnections) do
-        pcall(function() conn:Disconnect() end)
-    end
-    table.clear(antiPauseConnections)
+local function buildRarityMap()
+    table.clear(uploadedIdRarityMap)
+    
+    pcall(function()
+        local cheeseModelsFolder = game:GetService("ReplicatedStorage"):FindFirstChild("CheeseModels")
+        if not cheeseModelsFolder then return end
 
-    if state then
-        local guiService = game:GetService("GuiService")
-        local runService = game:GetService("RunService")
-
-        local renderConn = runService.RenderStepped:Connect(function()
-            if antiGameplayPausedEnabled then
-                pcall(function()
-                    if guiService.GameplayPaused then
-                        guiService.GameplayPaused = false
+        for _, rarityFolder in ipairs(cheeseModelsFolder:GetChildren()) do
+            if rarityFolder:IsA("Folder") then
+                local rarityName = rarityFolder.Name
+                for _, desc in ipairs(rarityFolder:GetDescendants()) do
+                    local uploadedId = desc:GetAttribute("UploadedId")
+                    if uploadedId then
+                        uploadedIdRarityMap[tostring(uploadedId)] = rarityName
                     end
-                end)
-            end
-        end)
-        table.insert(antiPauseConnections, renderConn)
 
-        local propConn = guiService:GetPropertyChangedSignal("GameplayPaused"):Connect(function()
-            if antiGameplayPausedEnabled and guiService.GameplayPaused then
-                pcall(function()
-                    guiService.GameplayPaused = false
-                end)
-            end
-        end)
-        table.insert(antiPauseConnections, propConn)
-
-        pcall(function()
-            local robloxGui = game:GetService("CoreGui"):FindFirstChild("RobloxGui")
-            if robloxGui then
-                local pauseGui = robloxGui:FindFirstChild("GameplayPaused") or robloxGui:FindFirstChild("PauseMenu")
-                if pauseGui then
-                    pauseGui.Enabled = false
+                    if desc:IsA("MeshPart") then
+                        if desc.MeshId ~= "" then
+                            uploadedIdRarityMap[desc.MeshId] = rarityName
+                        end
+                        if desc.TextureID ~= "" then
+                            uploadedIdRarityMap[desc.TextureID] = rarityName
+                        end
+                    end
                 end
             end
-        end)
+        end
+    end)
+end
+
+-- Rarity validation checking UploadedId across descendants
+local function isRarityAllowed(prompt)
+    if activeRarityFilterCount == 0 then
+        return true
     end
+
+    local packageModel = prompt.Parent
+    while packageModel and packageModel.Parent and packageModel.Parent ~= workspace.World.Levels do
+        if packageModel.Name:match("Package") then
+            break
+        end
+        packageModel = packageModel.Parent
+    end
+
+    if not packageModel then return false end
+
+    for _, desc in ipairs(packageModel:GetDescendants()) do
+        local uploadedId = desc:GetAttribute("UploadedId")
+        if uploadedId then
+            local matchedRarity = uploadedIdRarityMap[tostring(uploadedId)]
+            if matchedRarity and selectedRarities[matchedRarity] then
+                return true
+            end
+        end
+
+        if desc:IsA("MeshPart") then
+            local meshRarity = uploadedIdRarityMap[desc.MeshId] or uploadedIdRarityMap[desc.TextureID]
+            if meshRarity and selectedRarities[meshRarity] then
+                return true
+            end
+        end
+        
+        local rarityAttr = desc:GetAttribute("Rarity") or desc:GetAttribute("Tier")
+        if rarityAttr and selectedRarities[tostring(rarityAttr)] then
+            return true
+        end
+    end
+
+    return false
 end
 
 local function startFarming(levelNum)
@@ -103,7 +133,9 @@ local function startFarming(levelNum)
             local foundPrompts = {}
             for _, descendant in ipairs(levelFolder:GetDescendants()) do
                 if descendant:IsA("ProximityPrompt") and descendant.Name == "StealPrompt" then
-                    table.insert(foundPrompts, descendant)
+                    if isRarityAllowed(descendant) then
+                        table.insert(foundPrompts, descendant)
+                    end
                 end
             end
 
@@ -115,7 +147,7 @@ local function startFarming(levelNum)
             for _, prompt in ipairs(foundPrompts) do
                 if not activeFarms[levelNum] then break end
                 
-                if prompt and prompt.Parent then
+                if prompt and prompt.Parent and prompt.Enabled then
                     char = player.Character
                     root = char and char:FindFirstChild("HumanoidRootPart")
                     local parentPart = prompt.Parent
@@ -125,10 +157,16 @@ local function startFarming(levelNum)
                         task.wait(0.15)
                         
                         fireproximityprompt(prompt, 0)
-                        task.wait(0.15)
+                        
+                        -- Verification loop: wait until prompt disappears or is collected (max timeout 1.5s)
+                        local startTime = tick()
+                        while prompt and prompt.Parent and prompt.Enabled and (tick() - startTime < 1.5) do
+                            task.wait(0.1)
+                        end
                         
                         root.CFrame = safeZoneCFrame
-                        task.wait(0.5)
+                        -- 1 second gap after successfully stealing before targeting the next
+                        task.wait(1.0)
                     end
                 end
             end
@@ -142,6 +180,8 @@ end
 
 -- Function to construct the main script tabs after key is verified
 local function unlockHubFeatures()
+    buildRarityMap()
+
     -- Initialize global automation functions
     task.spawn(function()
         local vu = game:GetService("VirtualUser")
@@ -149,30 +189,37 @@ local function unlockHubFeatures()
             vu:CaptureController()
             vu:ClickButton2(Vector2.new())
         end)
-
-        setAntiGameplayPaused(true)
-
-        local function makeInstant(prompt)
-            if prompt:IsA("ProximityPrompt") then
-                prompt.HoldDuration = 0
-            end
-        end
-        
-        for _, descendant in ipairs(workspace:GetDescendants()) do
-            makeInstant(descendant)
-        end
-        
-        workspace.DescendantAdded:Connect(makeInstant)
     end)
 
     local FarmTab = Window:CreateTab("Farm", 4483362458)
-    local SettingsTab = Window:CreateTab("Settings", 4483362458)
+    local ImportantTab = Window:CreateTab("Important", 4483362458)
 
     local earthLevelOptions = {
         "Level 1", "Level 2", "Level 3", "Level 4",
         "Level 5", "Level 6", "Level 7", "Level 8",
         "Level 9", "Level 10", "Level 11", "Level 12"
     }
+
+    local rarityOptions = {
+        "Common", "Uncommon", "Rare", "Epic",
+        "Legendary", "Mythic", "Divine", "Ancient",
+        "Cosmic", "Golden"
+    }
+
+    FarmTab:CreateDropdown({
+       Name = "Filter by Rarity",
+       Options = rarityOptions,
+       CurrentOption = {},
+       MultipleOptions = true,
+       Flag = "RarityFilterDropdown",
+       Callback = function(SelectedOptions)
+           table.clear(selectedRarities)
+           activeRarityFilterCount = #SelectedOptions
+           for _, rarity in ipairs(SelectedOptions) do
+               selectedRarities[rarity] = true
+           end
+       end,
+    })
 
     FarmTab:CreateDropdown({
        Name = "Steal Earth",
@@ -199,32 +246,43 @@ local function unlockHubFeatures()
        end,
     })
 
-    SettingsTab:CreateToggle({
-       Name = "Instant Proximity Prompt",
-       CurrentValue = true,
-       Callback = function(Value)
-           local function toggleInstant(prompt)
-               if prompt:IsA("ProximityPrompt") then
-                   prompt.HoldDuration = Value and 0 or 0.5
-               end
-           end
-           for _, descendant in ipairs(workspace:GetDescendants()) do
-               toggleInstant(descendant)
-           end
+    ImportantTab:CreateSection("Stability & Performance Notes")
+    ImportantTab:CreateParagraph({
+       Title = "Recommended Setup", 
+       Content = "To ensure maximum script stability, prevent gameplay pauses during high-level teleports, and enforce instant prompts cleanly, please execute Infinite Yield and run the required command below."
+    })
+
+    ImportantTab:CreateButton({
+       Name = "Execute Infinite Yield",
+       Callback = function()
+           pcall(function()
+               loadstring(game:HttpGet('https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source'))()
+           end)
+           Rayfield:Notify({
+              Title = "Infinite Yield",
+              Content = "Infinite Yield executed successfully!",
+              Duration = 3,
+           })
        end,
     })
 
-    SettingsTab:CreateToggle({
-       Name = "Anti Gameplay Paused",
-       CurrentValue = true,
-       Callback = function(Value)
-           setAntiGameplayPaused(Value)
+    ImportantTab:CreateButton({
+       Name = "Copy IY Command (antigameplaypaused\\instantpp)",
+       Callback = function()
+           if setclipboard then
+               setclipboard("antigameplaypaused\\instantpp")
+               Rayfield:Notify({
+                  Title = "Command Copied!",
+                  Content = "Paste 'antigameplaypaused\\instantpp' in your Infinite Yield chat/console.",
+                  Duration = 4,
+               })
+           end
        end,
     })
     
     Rayfield:Notify({
        Title = "Access Granted",
-       Content = "Farm and Settings tabs unlocked!",
+       Content = "Farm and Important tabs unlocked!",
        Duration = 4,
     })
 end
