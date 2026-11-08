@@ -1,3 +1,7 @@
+local keyURL = "https://direct-link.net/9934473/O18tjCoo5pXr"
+local validKey = "KeyKey_DoYouLoveMe?"
+local keyFileName = "MozartHubKey.txt"
+
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
@@ -7,58 +11,8 @@ local Window = Rayfield:CreateWindow({
    KeySystem = false
 })
 
-local FarmTab = Window:CreateTab("Farm", 4483362458)
-local KeyTab = Window:CreateTab("Key System", 4483362458)
-local SettingsTab = Window:CreateTab("Settings", 4483362458)
-
--- ==================== KEY SYSTEM TAB ====================
-KeyTab:CreateSection("Monetization & Access")
-
-KeyTab:CreateButton({
-   Name = "Copy Linkvertise Key Link",
-   Callback = function()
-       setclipboard("https://direct-link.net/9934473/O18tjCoo5pXr")
-       Rayfield:Notify({
-          Title = "Link Copied!",
-          Content = "Paste the Linkvertise link in your browser to get your key.",
-          Duration = 5,
-       })
-   end,
-})
-
-local enteredKey = ""
-
-KeyTab:CreateInput({
-   Name = "Enter Access Key",
-   PlaceholderText = "Paste key here...",
-   RemoveTextAfterFocusLost = false,
-   Callback = function(Text)
-       enteredKey = Text
-   end,
-})
-
-KeyTab:CreateButton({
-   Name = "Verify Key",
-   Callback = function()
-       if enteredKey == "MozartCheeseKey2026" then
-           Rayfield:Notify({
-              Title = "Success!",
-              Content = "Key verified! Enjoy farming.",
-              Duration = 4,
-          })
-       else
-           Rayfield:Notify({
-              Title = "Invalid Key",
-              Content = "Please complete the Linkvertise steps to get the correct key.",
-              Duration = 4,
-          })
-       end
-   end,
-})
-
--- ==================== FARMING LOGIC ====================
+-- Shared variables for farming features
 local safeZoneCFrame = CFrame.new(0, 3, 37.5)
-
 local levelCoordinates = {
     [1]  = CFrame.new(0, 3, -130),
     [2]  = CFrame.new(0, 3, -425.5),
@@ -123,34 +77,6 @@ local function setAntiGameplayPaused(state)
     end
 end
 
-task.spawn(function()
-    local vu = game:GetService("VirtualUser")
-    game:GetService("Players").LocalPlayer.Idled:Connect(function()
-        vu:CaptureController()
-        vu:ClickButton2(Vector2.new())
-    end)
-
-    setAntiGameplayPaused(true)
-
-    local function makeInstant(prompt)
-        if prompt:IsA("ProximityPrompt") then
-            prompt.HoldDuration = 0
-        end
-    end
-    
-    for _, descendant in ipairs(workspace:GetDescendants()) do
-        makeInstant(descendant)
-    end
-    
-    workspace.DescendantAdded:Connect(makeInstant)
-    
-    Rayfield:Notify({
-       Title = "Hub Initialized",
-       Content = "Anti-Pause, Anti-AFK & Instant Prompts active!",
-       Duration = 3,
-    })
-end)
-
 local function startFarming(levelNum)
     if activeFarmThreads[levelNum] then return end
     
@@ -214,56 +140,154 @@ local function startFarming(levelNum)
     end)
 end
 
-local earthLevelOptions = {
-    "Level 1", "Level 2", "Level 3", "Level 4",
-    "Level 5", "Level 6", "Level 7", "Level 8",
-    "Level 9", "Level 10", "Level 11", "Level 12"
-}
+-- Function to construct the main script tabs after key is verified
+local function unlockHubFeatures()
+    -- Initialize global automation functions
+    task.spawn(function()
+        local vu = game:GetService("VirtualUser")
+        game:GetService("Players").LocalPlayer.Idled:Connect(function()
+            vu:CaptureController()
+            vu:ClickButton2(Vector2.new())
+        end)
 
-FarmTab:CreateDropdown({
-   Name = "Steal Earth",
-   Options = earthLevelOptions,
-   CurrentOption = {},
-   MultipleOptions = true,
-   Flag = "StealEarthDropdown",
-   Callback = function(SelectedOptions)
-       local selectedSet = {}
-       for _, opt in ipairs(SelectedOptions) do
-           local levelNum = tonumber(opt:match("%d+"))
-           if levelNum then
-               selectedSet[levelNum] = true
+        setAntiGameplayPaused(true)
+
+        local function makeInstant(prompt)
+            if prompt:IsA("ProximityPrompt") then
+                prompt.HoldDuration = 0
+            end
+        end
+        
+        for _, descendant in ipairs(workspace:GetDescendants()) do
+            makeInstant(descendant)
+        end
+        
+        workspace.DescendantAdded:Connect(makeInstant)
+    end)
+
+    local FarmTab = Window:CreateTab("Farm", 4483362458)
+    local SettingsTab = Window:CreateTab("Settings", 4483362458)
+
+    local earthLevelOptions = {
+        "Level 1", "Level 2", "Level 3", "Level 4",
+        "Level 5", "Level 6", "Level 7", "Level 8",
+        "Level 9", "Level 10", "Level 11", "Level 12"
+    }
+
+    FarmTab:CreateDropdown({
+       Name = "Steal Earth",
+       Options = earthLevelOptions,
+       CurrentOption = {},
+       MultipleOptions = true,
+       Flag = "StealEarthDropdown",
+       Callback = function(SelectedOptions)
+           local selectedSet = {}
+           for _, opt in ipairs(SelectedOptions) do
+               local levelNum = tonumber(opt:match("%d+"))
+               if levelNum then
+                   selectedSet[levelNum] = true
+               end
            end
-       end
 
-       for i = 1, 12 do
-           local shouldFarm = selectedSet[i] or false
-           activeFarms[i] = shouldFarm
-           if shouldFarm then
-               startFarming(i)
+           for i = 1, 12 do
+               local shouldFarm = selectedSet[i] or false
+               activeFarms[i] = shouldFarm
+               if shouldFarm then
+                   startFarming(i)
+               end
            end
-       end
-   end,
-})
+       end,
+    })
 
-SettingsTab:CreateToggle({
-   Name = "Instant Proximity Prompt",
-   CurrentValue = true,
-   Callback = function(Value)
-       local function toggleInstant(prompt)
-           if prompt:IsA("ProximityPrompt") then
-               prompt.HoldDuration = Value and 0 or 0.5
+    SettingsTab:CreateToggle({
+       Name = "Instant Proximity Prompt",
+       CurrentValue = true,
+       Callback = function(Value)
+           local function toggleInstant(prompt)
+               if prompt:IsA("ProximityPrompt") then
+                   prompt.HoldDuration = Value and 0 or 0.5
+               end
            end
-       end
-       for _, descendant in ipairs(workspace:GetDescendants()) do
-           toggleInstant(descendant)
-       end
-   end,
-})
+           for _, descendant in ipairs(workspace:GetDescendants()) do
+               toggleInstant(descendant)
+           end
+       end,
+    })
 
-SettingsTab:CreateToggle({
-   Name = "Anti Gameplay Paused",
-   CurrentValue = true,
-   Callback = function(Value)
-       setAntiGameplayPaused(Value)
-   end,
-})
+    SettingsTab:CreateToggle({
+       Name = "Anti Gameplay Paused",
+       CurrentValue = true,
+       Callback = function(Value)
+           setAntiGameplayPaused(Value)
+       end,
+    })
+    
+    Rayfield:Notify({
+       Title = "Access Granted",
+       Content = "Farm and Settings tabs unlocked!",
+       Duration = 4,
+    })
+end
+
+-- Check if saved key exists
+local hasSavedKey = false
+if isfile and readfile and isfile(keyFileName) then
+    if readfile(keyFileName) == validKey then
+        hasSavedKey = true
+    end
+end
+
+if hasSavedKey then
+    unlockHubFeatures()
+else
+    -- Show ONLY Key System Tab initially
+    local KeyTab = Window:CreateTab("Key System", 4483362458)
+    KeyTab:CreateSection("Monetization & Access")
+
+    KeyTab:CreateButton({
+       Name = "Copy Linkvertise Key Link",
+       Callback = function()
+           if setclipboard then
+               setclipboard(keyURL)
+               Rayfield:Notify({
+                  Title = "Link Copied!",
+                  Content = "Paste the Linkvertise link in your browser to get your key.",
+                  Duration = 5,
+               })
+           end
+       end,
+    })
+
+    local enteredKey = ""
+
+    KeyTab:CreateInput({
+       Name = "Enter Access Key",
+       PlaceholderText = "Paste key here...",
+       RemoveTextAfterFocusLost = false,
+       Callback = function(Text)
+           enteredKey = Text:gsub("%s+", "")
+       end,
+    })
+
+    local unlocked = false
+    KeyTab:CreateButton({
+       Name = "Verify Key",
+       Callback = function()
+           if unlocked then return end
+           
+           if enteredKey == validKey then
+               unlocked = true
+               if writefile then
+                   writefile(keyFileName, validKey)
+               end
+               unlockHubFeatures()
+           else
+               Rayfield:Notify({
+                  Title = "Invalid Key",
+                  Content = "Incorrect key! Get the valid key via Linkvertise.",
+                  Duration = 4,
+              })
+           end
+       end,
+    })
+end
