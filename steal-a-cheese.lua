@@ -4,30 +4,7 @@ local Window = Rayfield:CreateWindow({
    Name = "Steal a Cheese | Auto-Farm",
    LoadingTitle = "Loading Hub...",
    ConfigurationSaving = { Enabled = false },
-   KeySystem = true,
-   KeySettings = {
-      Title = "Mozart Hub | Key System",
-      Subtitle = "Key System Required",
-      Note = "Click 'Copy Key Link', paste it in your browser, complete the steps to get the key!",
-      FileName = "MozartHubKey", 
-      SaveKey = true,
-      GrabKeyFromSite = false,
-      Key = {"MozartCheeseKey2026"},
-      Actions = {
-         {
-            Text = "Copy Key Link",
-            OnPress = function()
-                setclipboard("https://direct-link.net/9934473/O18tjCoo5pXr")
-                
-                Rayfield:Notify({
-                   Title = "Link Copied!",
-                   Content = "Paste the copied Linkvertise link into your browser to get your key.",
-                   Duration = 5,
-                })
-            end
-         }
-      }
-   }
+   KeySystem = false
 })
 
 local FarmTab = Window:CreateTab("Farm", 4483362458)
