@@ -8,8 +8,55 @@ local Window = Rayfield:CreateWindow({
 })
 
 local FarmTab = Window:CreateTab("Farm", 4483362458)
+local KeyTab = Window:CreateTab("Key System", 4483362458)
 local SettingsTab = Window:CreateTab("Settings", 4483362458)
 
+-- ==================== KEY SYSTEM TAB ====================
+KeyTab:CreateSection("Monetization & Access")
+
+KeyTab:CreateButton({
+   Name = "Copy Linkvertise Key Link",
+   Callback = function()
+       setclipboard("https://direct-link.net/9934473/O18tjCoo5pXr")
+       Rayfield:Notify({
+          Title = "Link Copied!",
+          Content = "Paste the Linkvertise link in your browser to get your key.",
+          Duration = 5,
+       })
+   end,
+})
+
+local enteredKey = ""
+
+KeyTab:CreateInput({
+   Name = "Enter Access Key",
+   PlaceholderText = "Paste key here...",
+   RemoveTextAfterFocusLost = false,
+   Callback = function(Text)
+       enteredKey = Text
+   end,
+})
+
+KeyTab:CreateButton({
+   Name = "Verify Key",
+   Callback = function()
+       if enteredKey == "MozartCheeseKey2026" then
+           Rayfield:Notify({
+              Title = "Success!",
+              Content = "Key verified! Enjoy farming.",
+              Duration = 4,
+          })
+       else
+           Rayfield:Notify({
+              Title = "Invalid Key",
+              Content = "Please complete the Linkvertise steps to get the correct key.",
+              Duration = 4,
+          })
+       end
+   end,
+})
+
+-- ==================== FARMING LOGIC ====================
 local safeZoneCFrame = CFrame.new(0, 3, 37.5)
 
 local levelCoordinates = {
