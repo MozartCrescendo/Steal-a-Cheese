@@ -1,4 +1,4 @@
--- PART 1 of 3: Steal a Cheese Hub
+-- PART 1 of 5: Steal a Cheese Hub
 local keyURL = "https://direct-link.net/9934473/O18tjCoo5pXr"
 local validKey = "KeyKey_DoYouLoveMe?"
 local keyFileName = "MozartHubKey.txt"
@@ -15,7 +15,7 @@ local Window = Rayfield:CreateWindow({
 -- Shared variables for farming features
 local earthSafeZoneCFrame = CFrame.new(0, 3, 37.5)
 local moonSafeZoneCFrame  = CFrame.new(0, 3, 20455)
-local riftSafeZoneCFrame  = CFrame.new(6000, 4, 902)
+local riftSafeZoneCFrame  = CFrame.new(6000, 4, 9002)
 
 local earthCoordinates = {
     [1]  = CFrame.new(0, 3, -130),
@@ -123,7 +123,7 @@ local function buildRarityMap()
         end
     end)
 end
-
+-- PART 2 of 5: Steal a Cheese Hub
 -- Rarity validation checking UploadedId across descendants
 local function isRarityAllowed(prompt)
     if activeRarityFilterCount == 0 then
@@ -165,7 +165,7 @@ local function isRarityAllowed(prompt)
 
     return false
 end
--- PART 2 of 3: Steal a Cheese Hub
+
 -- Earth Farming Loop
 local function startEarthFarming(levelNum)
     if activeEarthFarmThreads[levelNum] then return end
@@ -218,7 +218,6 @@ local function startEarthFarming(levelNum)
                         
                         fireproximityprompt(prompt, 0)
                         
-                        -- Verification loop
                         local startTime = tick()
                         while prompt and prompt.Parent and prompt.Enabled and (tick() - startTime < 1.5) do
                             task.wait(0.1)
@@ -236,7 +235,7 @@ local function startEarthFarming(levelNum)
         activeEarthFarmThreads[levelNum] = nil
     end)
 end
-
+-- PART 3 of 5: Steal a Cheese Hub
 -- Moon Farming Loop
 local function startMoonFarming(levelNum)
     if activeMoonFarmThreads[levelNum] then return end
@@ -290,7 +289,6 @@ local function startMoonFarming(levelNum)
                         
                         fireproximityprompt(prompt, 0)
                         
-                        -- Verification loop
                         local startTime = tick()
                         while prompt and prompt.Parent and prompt.Enabled and (tick() - startTime < 1.5) do
                             task.wait(0.1)
@@ -363,7 +361,6 @@ local function startRiftFarming(levelNum)
                         
                         fireproximityprompt(prompt, 0)
                         
-                        -- Verification loop
                         local startTime = tick()
                         while prompt and prompt.Parent and prompt.Enabled and (tick() - startTime < 1.5) do
                             task.wait(0.1)
@@ -381,12 +378,10 @@ local function startRiftFarming(levelNum)
         activeRiftFarmThreads[levelNum] = nil
     end)
 end
--- PART 3 of 3: Steal a Cheese Hub
--- Function to construct the main script tabs after key is verified
+-- PART 4 of 5: Steal a Cheese Hub
 local function unlockHubFeatures()
     buildRarityMap()
 
-    -- Anti-AFK Initialization
     task.spawn(function()
         local vu = game:GetService("VirtualUser")
         game:GetService("Players").LocalPlayer.Idled:Connect(function()
@@ -395,7 +390,6 @@ local function unlockHubFeatures()
         end)
     end)
 
-    -- Background enforcement loops for Player Modifications
     local RunService = game:GetService("RunService")
     local UserInputService = game:GetService("UserInputService")
     local Players = game:GetService("Players")
@@ -435,7 +429,6 @@ local function unlockHubFeatures()
         end
     end)
 
-    -- Background Auto Open Loop
     task.spawn(function()
         while true do
             task.wait(0.5)
@@ -478,7 +471,6 @@ local function unlockHubFeatures()
         end
     end)
 
-    -- Background Auto Place Loop
     task.spawn(function()
         while true do
             task.wait(1.0)
@@ -502,9 +494,8 @@ local function unlockHubFeatures()
         "Level 1", "Level 2", "Level 3", "Level 4",
         "Level 5", "Level 6", "Level 7", "Level 8",
         "Level 9", "Level 10", "Level 11", "Level 12"
-    }
-
-    local moonLevelOptions = {
+   }
+      local moonLevelOptions = {
         "Level 1", "Level 2", "Level 3", "Level 4",
         "Level 5", "Level 6", "Level 7", "Level 8"
     }
@@ -519,9 +510,8 @@ local function unlockHubFeatures()
         "Common", "Uncommon", "Rare", "Epic",
         "Legendary", "Mythic", "Divine", "Ancient",
         "Cosmic", "Golden"
-    }
-
-    -- FARM TAB
+   }
+-- PART 5 of 5: Steal a Cheese Hub
     FarmTab:CreateDropdown({
        Name = "Filter by Rarity",
        Options = rarityOptions,
@@ -612,7 +602,6 @@ local function unlockHubFeatures()
        end,
     })
 
-    -- PLAYER TAB
     PlayerTab:CreateSection("Movement Modifications")
 
     PlayerTab:CreateSlider({
@@ -705,7 +694,6 @@ local function unlockHubFeatures()
        end,
     })
 
-    -- AUTOMATION TAB
     AutomationTab:CreateSection("Plot Automation")
 
     AutomationTab:CreateToggle({
@@ -726,7 +714,6 @@ local function unlockHubFeatures()
        end,
     })
 
-    -- IMPORTANT TAB
     ImportantTab:CreateSection("Stability & Performance Notes")
     ImportantTab:CreateParagraph({
        Title = "Recommended Setup", 
@@ -768,7 +755,6 @@ local function unlockHubFeatures()
     })
 end
 
--- Check if saved key exists
 local hasSavedKey = false
 if isfile and readfile and isfile(keyFileName) then
     if readfile(keyFileName) == validKey then
@@ -779,7 +765,6 @@ end
 if hasSavedKey then
     unlockHubFeatures()
 else
-    -- Show ONLY Key System Tab initially
     local KeyTab = Window:CreateTab("Key System", 4483362458)
     KeyTab:CreateSection("Monetization & Access")
 
