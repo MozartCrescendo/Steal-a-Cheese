@@ -1,4 +1,4 @@
--- PART 1 of 2: Steal a Cheese Hub
+-- PART 1 of 3: Steal a Cheese Hub
 local keyURL = "https://direct-link.net/9934473/O18tjCoo5pXr"
 local validKey = "KeyKey_DoYouLoveMe?"
 local keyFileName = "MozartHubKey.txt"
@@ -15,6 +15,7 @@ local Window = Rayfield:CreateWindow({
 -- Shared variables for farming features
 local earthSafeZoneCFrame = CFrame.new(0, 3, 37.5)
 local moonSafeZoneCFrame  = CFrame.new(0, 3, 20455)
+local riftSafeZoneCFrame  = CFrame.new(6000, 4, 902)
 
 local earthCoordinates = {
     [1]  = CFrame.new(0, 3, -130),
@@ -53,11 +54,27 @@ local moonFolderNames = {
     [8] = "GreatWheel"
 }
 
+local riftCoordinates = {
+    [1]  = CFrame.new(6000, 4, 8750), -- FondueFalls
+    [2]  = CFrame.new(6000, 4, 8300), -- SwissLabyrinth
+    [3]  = CFrame.new(6000, 4, 7750), -- BrieBog
+    [4]  = CFrame.new(6000, 4, 7150), -- GoudaGlacier
+    [5]  = CFrame.new(6000, 4, 6450), -- MirrorCheddar
+    [6]  = CFrame.new(6000, 4, 5700), -- BlueCheeseCaverns
+    [7]  = CFrame.new(6000, 4, 4900), -- MoltenParmesan
+    [8]  = CFrame.new(6000, 4, 4000), -- GravityGorgonzola
+    [9]  = CFrame.new(6000, 4, 3050), -- RindVoid
+    [10] = CFrame.new(6000, 4, 2100), -- CheeseCore
+}
+
 local activeEarthFarms = {}
 local activeEarthFarmThreads = {}
 
 local activeMoonFarms = {}
 local activeMoonFarmThreads = {}
+
+local activeRiftFarms = {}
+local activeRiftFarmThreads = {}
 
 local selectedRarities = {}
 local activeRarityFilterCount = 0
@@ -113,8 +130,9 @@ local function isRarityAllowed(prompt)
         return true
     end
 
+    local riftFolder = workspace:FindFirstChild("Dimension") and workspace.Dimension:FindFirstChild("Rift")
     local packageModel = prompt.Parent
-    while packageModel and packageModel.Parent and packageModel.Parent ~= workspace.World.Levels and packageModel.Parent ~= workspace.World.Craters do
+    while packageModel and packageModel.Parent and packageModel.Parent ~= workspace.World.Levels and packageModel.Parent ~= workspace.World.Craters and packageModel.Parent ~= riftFolder do
         if packageModel.Name:match("Package") then
             break
         end
@@ -147,7 +165,7 @@ local function isRarityAllowed(prompt)
 
     return false
 end
-
+-- PART 2 of 3: Steal a Cheese Hub
 -- Earth Farming Loop
 local function startEarthFarming(levelNum)
     if activeEarthFarmThreads[levelNum] then return end
@@ -290,7 +308,80 @@ local function startMoonFarming(levelNum)
         activeMoonFarmThreads[levelNum] = nil
     end)
 end
--- PART 2 of 2: Steal a Cheese Hub
+
+-- Rift Farming Loop
+local function startRiftFarming(levelNum)
+    if activeRiftFarmThreads[levelNum] then return end
+    
+    activeRiftFarmThreads[levelNum] = task.spawn(function()
+        local player = game.Players.LocalPlayer
+        
+        while activeRiftFarms[levelNum] do
+            local char = player.Character
+            local root = char and char:FindFirstChild("HumanoidRootPart")
+
+            if root and riftCoordinates[levelNum] then
+                root.CFrame = riftCoordinates[levelNum]
+                task.wait(0.6)
+            end
+
+            local riftFolderName = string.format("Rift%02d", levelNum)
+            local dimensionFolder = workspace:FindFirstChild("Dimension")
+            local riftFolder = dimensionFolder and dimensionFolder:FindFirstChild("Rift")
+            local levelFolder = riftFolder and riftFolder:FindFirstChild(riftFolderName)
+            
+            if not levelFolder then
+                task.wait(1)
+                continue
+            end
+
+            local foundPrompts = {}
+            for _, descendant in ipairs(levelFolder:GetDescendants()) do
+                if descendant:IsA("ProximityPrompt") and descendant.Name == "StealPrompt" then
+                    if isRarityAllowed(descendant) then
+                        table.insert(foundPrompts, descendant)
+                    end
+                end
+            end
+
+            if #foundPrompts == 0 then
+                task.wait(3)
+                continue
+            end
+
+            for _, prompt in ipairs(foundPrompts) do
+                if not activeRiftFarms[levelNum] then break end
+                
+                if prompt and prompt.Parent and prompt.Enabled then
+                    char = player.Character
+                    root = char and char:FindFirstChild("HumanoidRootPart")
+                    local parentPart = prompt.Parent
+                    
+                    if root and parentPart then
+                        root.CFrame = parentPart.CFrame
+                        task.wait(0.15)
+                        
+                        fireproximityprompt(prompt, 0)
+                        
+                        -- Verification loop
+                        local startTime = tick()
+                        while prompt and prompt.Parent and prompt.Enabled and (tick() - startTime < 1.5) do
+                            task.wait(0.1)
+                        end
+                        
+                        root.CFrame = riftSafeZoneCFrame
+                        task.wait(1.0)
+                    end
+                end
+            end
+            
+            task.wait(0.2)
+        end
+        
+        activeRiftFarmThreads[levelNum] = nil
+    end)
+end
+-- PART 3 of 3: Steal a Cheese Hub
 -- Function to construct the main script tabs after key is verified
 local function unlockHubFeatures()
     buildRarityMap()
@@ -418,6 +509,12 @@ local function unlockHubFeatures()
         "Level 5", "Level 6", "Level 7", "Level 8"
     }
 
+    local riftLevelOptions = {
+        "Level 1", "Level 2", "Level 3", "Level 4",
+        "Level 5", "Level 6", "Level 7", "Level 8",
+        "Level 9", "Level 10"
+    }
+
     local rarityOptions = {
         "Common", "Uncommon", "Rare", "Epic",
         "Legendary", "Mythic", "Divine", "Ancient",
@@ -485,6 +582,31 @@ local function unlockHubFeatures()
                activeMoonFarms[i] = shouldFarm
                if shouldFarm then
                    startMoonFarming(i)
+               end
+           end
+       end,
+    })
+
+    FarmTab:CreateDropdown({
+       Name = "Steal Rift",
+       Options = riftLevelOptions,
+       CurrentOption = {},
+       MultipleOptions = true,
+       Flag = "StealRiftDropdown",
+       Callback = function(SelectedOptions)
+           local selectedSet = {}
+           for _, opt in ipairs(SelectedOptions) do
+               local levelNum = tonumber(opt:match("%d+"))
+               if levelNum then
+                   selectedSet[levelNum] = true
+               end
+           end
+
+           for i = 1, 10 do
+               local shouldFarm = selectedSet[i] or false
+               activeRiftFarms[i] = shouldFarm
+               if shouldFarm then
+                   startRiftFarming(i)
                end
            end
        end,
@@ -568,6 +690,17 @@ local function unlockHubFeatures()
            local root = char and char:FindFirstChild("HumanoidRootPart")
            if root then
                root.CFrame = moonSafeZoneCFrame
+           end
+       end,
+    })
+
+    PlayerTab:CreateButton({
+       Name = "Teleport to Rift Safe Zone",
+       Callback = function()
+           local char = Players.LocalPlayer.Character
+           local root = char and char:FindFirstChild("HumanoidRootPart")
+           if root then
+               root.CFrame = riftSafeZoneCFrame
            end
        end,
     })
