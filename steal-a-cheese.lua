@@ -159,7 +159,7 @@ local function isRarityAllowed(prompt)
     return false
 end
 
--- Earth Farming Loop with Pre-Teleport & Original Position Restoration
+-- Earth Farming Loop (Instantly drops at Earth Safe Zone after stealing)
 local function startEarthFarming(levelNum)
     if activeEarthFarmThreads[levelNum] then return end
     
@@ -207,8 +207,6 @@ local function startEarthFarming(levelNum)
                         local parentPart = prompt.Parent
                         
                         if root and parentPart then
-                            local originalCFrame = root.CFrame
-                            
                             root.CFrame = parentPart.CFrame
                             task.wait(0.2)
                             fireproximityprompt(prompt, 0)
@@ -221,10 +219,9 @@ local function startEarthFarming(levelNum)
                             char = player.Character
                             root = char and char:FindFirstChild("HumanoidRootPart")
                             if root then
-                                root.CFrame = originalCFrame
+                                root.CFrame = earthSafeZoneCFrame
                             end
                             
-                            -- Stealth cooldown buffer to let cat guards calm down
                             task.wait(1.5)
                         end
                     end
@@ -238,7 +235,7 @@ local function startEarthFarming(levelNum)
     end)
 end
 
--- Moon Farming Loop with Pre-Teleport & Original Position Restoration
+-- Moon Farming Loop (Instantly drops at Moon Safe Zone after stealing)
 local function startMoonFarming(levelNum)
     if activeMoonFarmThreads[levelNum] then return end
     
@@ -287,8 +284,6 @@ local function startMoonFarming(levelNum)
                         local parentPart = prompt.Parent
                         
                         if root and parentPart then
-                            local originalCFrame = root.CFrame
-                            
                             root.CFrame = parentPart.CFrame
                             task.wait(0.2)
                             fireproximityprompt(prompt, 0)
@@ -301,7 +296,7 @@ local function startMoonFarming(levelNum)
                             char = player.Character
                             root = char and char:FindFirstChild("HumanoidRootPart")
                             if root then
-                                root.CFrame = originalCFrame
+                                root.CFrame = moonSafeZoneCFrame
                             end
                             
                             task.wait(1.5)
@@ -317,7 +312,7 @@ local function startMoonFarming(levelNum)
     end)
 end
 
--- Rift Farming Loop with Pre-Teleport & Original Position Restoration
+-- Rift Farming Loop (Instantly drops at Rift Safe Zone after stealing)
 local function startRiftFarming(levelNum)
     if activeRiftFarmThreads[levelNum] then return end
     
@@ -366,8 +361,6 @@ local function startRiftFarming(levelNum)
                         local parentPart = prompt.Parent
                         
                         if root and parentPart then
-                            local originalCFrame = root.CFrame
-                            
                             root.CFrame = parentPart.CFrame
                             task.wait(0.2)
                             fireproximityprompt(prompt, 0)
@@ -380,7 +373,7 @@ local function startRiftFarming(levelNum)
                             char = player.Character
                             root = char and char:FindFirstChild("HumanoidRootPart")
                             if root then
-                                root.CFrame = originalCFrame
+                                root.CFrame = riftSafeZoneCFrame
                             end
                             
                             task.wait(1.5)
