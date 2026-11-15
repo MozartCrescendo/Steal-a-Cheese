@@ -118,48 +118,49 @@ local function buildRarityMap()
     end)
 end
 
+-- Fully Fixed Rarity Checker supporting ReplicatedStorage maps & direct model attributes
 local function isRarityAllowed(prompt)
     if activeRarityFilterCount == 0 then
         return true
     end
 
-    local dimensionFolder = workspace.World:FindFirstChild("Dimension")
     local packageModel = prompt.Parent
-    while packageModel and packageModel.Parent and packageModel.Parent ~= workspace.World.Levels and packageModel.Parent ~= workspace.World.Craters and packageModel.Parent ~= dimensionFolder do
-        if packageModel.Name:match("Package") or packageModel.Name:match("Wrapped") then
-            break
-        end
-        packageModel = packageModel.Parent
-    end
-
-    if not packageModel then return false end
-
-    for _, desc in ipairs(packageModel:GetDescendants()) do
-        local uploadedId = desc:GetAttribute("UploadedId")
-        if uploadedId then
-            local matchedRarity = uploadedIdRarityMap[tostring(uploadedId)]
-            if matchedRarity and selectedRarities[matchedRarity] then
-                return true
-            end
-        end
-
-        if desc:IsA("MeshPart") then
-            local meshRarity = uploadedIdRarityMap[desc.MeshId] or uploadedIdRarityMap[desc.TextureID]
-            if meshRarity and selectedRarities[meshRarity] then
-                return true
-            end
-        end
-        
-        local rarityAttr = desc:GetAttribute("Rarity") or desc:GetAttribute("Tier")
+    -- Climb up the ancestry tree to find the package or cheese model container
+    while packageModel and packageModel ~= workspace and packageModel ~= workspace.World do
+        local rarityAttr = packageModel:GetAttribute("Rarity") or packageModel:GetAttribute("Tier") or packageModel:GetAttribute("CheeseRarity")
         if rarityAttr and selectedRarities[tostring(rarityAttr)] then
             return true
         end
+
+        for _, desc in ipairs(packageModel:GetDescendants()) do
+            local uploadedId = desc:GetAttribute("UploadedId")
+            if uploadedId then
+                local matchedRarity = uploadedIdRarityMap[tostring(uploadedId)]
+                if matchedRarity and selectedRarities[matchedRarity] then
+                    return true
+                end
+            end
+
+            if desc:IsA("MeshPart") then
+                local meshRarity = uploadedIdRarityMap[desc.MeshId] or uploadedIdRarityMap[desc.TextureID]
+                if meshRarity and selectedRarities[meshRarity] then
+                    return true
+                end
+            end
+            
+            local subRarityAttr = desc:GetAttribute("Rarity") or desc:GetAttribute("Tier") or desc:GetAttribute("CheeseRarity")
+            if subRarityAttr and selectedRarities[tostring(subRarityAttr)] then
+                return true
+            end
+        end
+
+        packageModel = packageModel.Parent
     end
 
     return false
 end
 
--- Earth Farming Loop (Instantly drops at Earth Safe Zone after stealing)
+-- Earth Farming Loop with Restored Rarity Filtering
 local function startEarthFarming(levelNum)
     if activeEarthFarmThreads[levelNum] then return end
     
@@ -235,7 +236,7 @@ local function startEarthFarming(levelNum)
     end)
 end
 
--- Moon Farming Loop (Instantly drops at Moon Safe Zone after stealing)
+-- Moon Farming Loop with Restored Rarity Filtering
 local function startMoonFarming(levelNum)
     if activeMoonFarmThreads[levelNum] then return end
     
@@ -312,7 +313,7 @@ local function startMoonFarming(levelNum)
     end)
 end
 
--- Rift Farming Loop (Instantly drops at Rift Safe Zone after stealing)
+-- Rift Farming Loop with Restored Rarity Filtering
 local function startRiftFarming(levelNum)
     if activeRiftFarmThreads[levelNum] then return end
     
