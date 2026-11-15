@@ -1,4 +1,3 @@
--- PART 1 of 5: Steal a Cheese Hub
 local keyURL = "https://direct-link.net/9934473/O18tjCoo5pXr"
 local validKey = "KeyKey_DoYouLoveMe?"
 local keyFileName = "MozartHubKey.txt"
@@ -12,37 +11,6 @@ local Window = Rayfield:CreateWindow({
    KeySystem = false
 })
 
--- Shared variables for farming features
-local earthSafeZoneCFrame = CFrame.new(0, 3, 37.5)
-local moonSafeZoneCFrame  = CFrame.new(0, 3, 20455)
-local riftSafeZoneCFrame  = CFrame.new(6000, 4, 9002)
-
-local earthCoordinates = {
-    [1]  = CFrame.new(0, 3, -130),
-    [2]  = CFrame.new(0, 3, -425.5),
-    [3]  = CFrame.new(0, 3, -763),
-    [4]  = CFrame.new(0, 3, -1148.5),
-    [5]  = CFrame.new(0, 3, -1589.5),
-    [6]  = CFrame.new(0, 3, -2094.5),
-    [7]  = CFrame.new(0, 3, -2672.5),
-    [8]  = CFrame.new(0, 3, -3335),
-    [9]  = CFrame.new(0, 3, -4094.5),
-    [10] = CFrame.new(0, 3, -4965.5),
-    [11] = CFrame.new(0, 3, -5965),
-    [12] = CFrame.new(0, 3, -7112),
-}
-
-local moonCoordinates = {
-    [1] = CFrame.new(285, 3, 21410),  -- MareCheddarium
-    [2] = CFrame.new(-325, 3, 22615), -- SwissHoles
-    [3] = CFrame.new(345, 3, 24030),  -- RindRidge
-    [4] = CFrame.new(-295, 3, 25615), -- CurdCanyon
-    [5] = CFrame.new(335, 3, 27465),  -- FarSide
-    [6] = CFrame.new(-295, 3, 29565), -- BlueVein
-    [7] = CFrame.new(315, 3, 32000),  -- MoltenMare
-    [8] = CFrame.new(-260, 3, 34790), -- GreatWheel
-}
-
 local moonFolderNames = {
     [1] = "MareCheddarium",
     [2] = "SwissHoles",
@@ -52,19 +20,6 @@ local moonFolderNames = {
     [6] = "BlueVein",
     [7] = "MoltenMare",
     [8] = "GreatWheel"
-}
-
-local riftCoordinates = {
-    [1]  = CFrame.new(6000, 4, 8750), -- FondueFalls
-    [2]  = CFrame.new(6000, 4, 8300), -- SwissLabyrinth
-    [3]  = CFrame.new(6000, 4, 7750), -- BrieBog
-    [4]  = CFrame.new(6000, 4, 7150), -- GoudaGlacier
-    [5]  = CFrame.new(6000, 4, 6450), -- MirrorCheddar
-    [6]  = CFrame.new(6000, 4, 5700), -- BlueCheeseCaverns
-    [7]  = CFrame.new(6000, 4, 4900), -- MoltenParmesan
-    [8]  = CFrame.new(6000, 4, 4000), -- GravityGorgonzola
-    [9]  = CFrame.new(6000, 4, 3050), -- RindVoid
-    [10] = CFrame.new(6000, 4, 2100), -- CheeseCore
 }
 
 local activeEarthFarms = {}
@@ -79,7 +34,6 @@ local activeRiftFarmThreads = {}
 local selectedRarities = {}
 local activeRarityFilterCount = 0
 
--- Player Mod States
 local customWalkSpeed = 16
 local customJumpPower = 50
 local walkSpeedEnabled = false
@@ -87,16 +41,13 @@ local jumpPowerEnabled = false
 local infiniteJumpEnabled = false
 local noclipEnabled = false
 
--- Automation States
 local autoOpenEnabled = false
 local autoPlaceEnabled = false
 
--- Rarity lookup tables
 local uploadedIdRarityMap = {}
 
 local function buildRarityMap()
     table.clear(uploadedIdRarityMap)
-    
     pcall(function()
         local cheeseModelsFolder = game:GetService("ReplicatedStorage"):FindFirstChild("CheeseModels")
         if not cheeseModelsFolder then return end
@@ -123,8 +74,7 @@ local function buildRarityMap()
         end
     end)
 end
--- PART 2 of 5: Steal a Cheese Hub
--- Rarity validation checking UploadedId across descendants
+
 local function isRarityAllowed(prompt)
     if activeRarityFilterCount == 0 then
         return true
@@ -166,7 +116,7 @@ local function isRarityAllowed(prompt)
     return false
 end
 
--- Earth Farming Loop
+-- Earth Farming Loop (Bulletproofed with pcall and safe root validation)
 local function startEarthFarming(levelNum)
     if activeEarthFarmThreads[levelNum] then return end
     
@@ -174,69 +124,64 @@ local function startEarthFarming(levelNum)
         local player = game.Players.LocalPlayer
         
         while activeEarthFarms[levelNum] do
-            local char = player.Character
-            local root = char and char:FindFirstChild("HumanoidRootPart")
-
-            if root and earthCoordinates[levelNum] then
-                root.CFrame = earthCoordinates[levelNum]
-                task.wait(0.6)
-            end
-
             local levelFolderName = string.format("Level%02d", levelNum)
             local levelFolder = workspace.World.Levels:FindFirstChild(levelFolderName)
             
             if not levelFolder then
-                task.wait(1)
+                task.wait(2)
                 continue
             end
 
-            local foundPrompts = {}
+            local foundPrompt = nil
             for _, descendant in ipairs(levelFolder:GetDescendants()) do
-                if descendant:IsA("ProximityPrompt") and descendant.Name == "StealPrompt" then
+                if descendant:IsA("ProximityPrompt") and descendant.Name == "StealPrompt" and descendant.Enabled then
                     if isRarityAllowed(descendant) then
-                        table.insert(foundPrompts, descendant)
+                        foundPrompt = descendant
+                        break
                     end
                 end
             end
 
-            if #foundPrompts == 0 then
-                task.wait(3)
+            if not foundPrompt then
+                task.wait(1.5)
                 continue
             end
 
-            for _, prompt in ipairs(foundPrompts) do
-                if not activeEarthFarms[levelNum] then break end
-                
-                if prompt and prompt.Parent and prompt.Enabled then
+            pcall(function()
+                local char = player.Character
+                local root = char and char:FindFirstChild("HumanoidRootPart")
+                local parentPart = foundPrompt and foundPrompt.Parent
+
+                if root and parentPart and foundPrompt.Enabled then
+                    local originalCFrame = root.CFrame
+                    
+                    root.CFrame = parentPart.CFrame
+                    task.wait(0.2)
+                    fireproximityprompt(foundPrompt, 0)
+                    
+                    local startTime = tick()
+                    while foundPrompt and foundPrompt.Parent and foundPrompt.Enabled and (tick() - startTime < 1.5) do
+                        task.wait(0.1)
+                    end
+                    
                     char = player.Character
                     root = char and char:FindFirstChild("HumanoidRootPart")
-                    local parentPart = prompt.Parent
-                    
-                    if root and parentPart then
-                        root.CFrame = parentPart.CFrame
-                        task.wait(0.15)
-                        
-                        fireproximityprompt(prompt, 0)
-                        
-                        local startTime = tick()
-                        while prompt and prompt.Parent and prompt.Enabled and (tick() - startTime < 1.5) do
-                            task.wait(0.1)
-                        end
-                        
-                        root.CFrame = earthSafeZoneCFrame
-                        task.wait(1.0)
+                    if root then
+                        root.CFrame = originalCFrame
                     end
                 end
-            end
+            end)
             
-            task.wait(0.2)
+            -- Stealth cooldown buffer to let cat guards calm down
+            task.wait(1.8)
+            task.wait(0.8)
         end
         
         activeEarthFarmThreads[levelNum] = nil
     end)
 end
--- PART 3 of 5: Steal a Cheese Hub
--- Moon Farming Loop
+
+-- Moon Farming Loop (Bulletproofed)
 local function startMoonFarming(levelNum)
     if activeMoonFarmThreads[levelNum] then return end
     
@@ -244,70 +189,64 @@ local function startMoonFarming(levelNum)
         local player = game.Players.LocalPlayer
         
         while activeMoonFarms[levelNum] do
-            local char = player.Character
-            local root = char and char:FindFirstChild("HumanoidRootPart")
-
-            if root and moonCoordinates[levelNum] then
-                root.CFrame = moonCoordinates[levelNum]
-                task.wait(0.6)
-            end
-
             local craterFolderName = moonFolderNames[levelNum]
             local cratersFolder = workspace.World:FindFirstChild("Craters")
             local craterFolder = cratersFolder and cratersFolder:FindFirstChild(craterFolderName)
             
             if not craterFolder then
-                task.wait(1)
+                task.wait(2)
                 continue
             end
 
-            local foundPrompts = {}
+            local foundPrompt = nil
             for _, descendant in ipairs(craterFolder:GetDescendants()) do
-                if descendant:IsA("ProximityPrompt") and descendant.Name == "StealPrompt" then
+                if descendant:IsA("ProximityPrompt") and descendant.Name == "StealPrompt" and descendant.Enabled then
                     if isRarityAllowed(descendant) then
-                        table.insert(foundPrompts, descendant)
+                        foundPrompt = descendant
+                        break
                     end
                 end
             end
 
-            if #foundPrompts == 0 then
-                task.wait(3)
+            if not foundPrompt then
+                task.wait(1.5)
                 continue
             end
 
-            for _, prompt in ipairs(foundPrompts) do
-                if not activeMoonFarms[levelNum] then break end
-                
-                if prompt and prompt.Parent and prompt.Enabled then
+            pcall(function()
+                local char = player.Character
+                local root = char and char:FindFirstChild("HumanoidRootPart")
+                local parentPart = foundPrompt and foundPrompt.Parent
+
+                if root and parentPart and foundPrompt.Enabled then
+                    local originalCFrame = root.CFrame
+                    
+                    root.CFrame = parentPart.CFrame
+                    task.wait(0.2)
+                    fireproximityprompt(foundPrompt, 0)
+                    
+                    local startTime = tick()
+                    while foundPrompt and foundPrompt.Parent and foundPrompt.Enabled and (tick() - startTime < 1.5) do
+                        task.wait(0.1)
+                    end
+                    
                     char = player.Character
                     root = char and char:FindFirstChild("HumanoidRootPart")
-                    local parentPart = prompt.Parent
-                    
-                    if root and parentPart then
-                        root.CFrame = parentPart.CFrame
-                        task.wait(0.15)
-                        
-                        fireproximityprompt(prompt, 0)
-                        
-                        local startTime = tick()
-                        while prompt and prompt.Parent and prompt.Enabled and (tick() - startTime < 1.5) do
-                            task.wait(0.1)
-                        end
-                        
-                        root.CFrame = moonSafeZoneCFrame
-                        task.wait(1.0)
+                    if root then
+                        root.CFrame = originalCFrame
                     end
                 end
-            end
+            end)
             
-            task.wait(0.2)
+            task.wait(1.8)
+            task.wait(0.8)
         end
         
         activeMoonFarmThreads[levelNum] = nil
     end)
 end
 
--- Rift Farming Loop
+-- Rift Farming Loop (Bulletproofed)
 local function startRiftFarming(levelNum)
     if activeRiftFarmThreads[levelNum] then return end
     
@@ -315,70 +254,64 @@ local function startRiftFarming(levelNum)
         local player = game.Players.LocalPlayer
         
         while activeRiftFarms[levelNum] do
-            local char = player.Character
-            local root = char and char:FindFirstChild("HumanoidRootPart")
-
-            if root and riftCoordinates[levelNum] then
-                root.CFrame = riftCoordinates[levelNum]
-                task.wait(0.6)
-            end
-
             local riftFolderName = string.format("Rift%02d", levelNum)
             local dimensionFolder = workspace:FindFirstChild("Dimension")
             local riftFolder = dimensionFolder and dimensionFolder:FindFirstChild("Rift")
             local levelFolder = riftFolder and riftFolder:FindFirstChild(riftFolderName)
             
             if not levelFolder then
-                task.wait(1)
+                task.wait(2)
                 continue
             end
 
-            local foundPrompts = {}
+            local foundPrompt = nil
             for _, descendant in ipairs(levelFolder:GetDescendants()) do
-                if descendant:IsA("ProximityPrompt") and descendant.Name == "StealPrompt" then
+                if descendant:IsA("ProximityPrompt") and descendant.Name == "StealPrompt" and descendant.Enabled then
                     if isRarityAllowed(descendant) then
-                        table.insert(foundPrompts, descendant)
+                        foundPrompt = descendant
+                        break
                     end
                 end
             end
 
-            if #foundPrompts == 0 then
-                task.wait(3)
+            if not foundPrompt then
+                task.wait(1.5)
                 continue
             end
 
-            for _, prompt in ipairs(foundPrompts) do
-                if not activeRiftFarms[levelNum] then break end
-                
-                if prompt and prompt.Parent and prompt.Enabled then
+            pcall(function()
+                local char = player.Character
+                local root = char and char:FindFirstChild("HumanoidRootPart")
+                local parentPart = foundPrompt and foundPrompt.Parent
+
+                if root and parentPart and foundPrompt.Enabled then
+                    local originalCFrame = root.CFrame
+                    
+                    root.CFrame = parentPart.CFrame
+                    task.wait(0.2)
+                    fireproximityprompt(foundPrompt, 0)
+                    
+                    local startTime = tick()
+                    while foundPrompt and foundPrompt.Parent and foundPrompt.Enabled and (tick() - startTime < 1.5) do
+                        task.wait(0.1)
+                    end
+                    
                     char = player.Character
                     root = char and char:FindFirstChild("HumanoidRootPart")
-                    local parentPart = prompt.Parent
-                    
-                    if root and parentPart then
-                        root.CFrame = parentPart.CFrame
-                        task.wait(0.15)
-                        
-                        fireproximityprompt(prompt, 0)
-                        
-                        local startTime = tick()
-                        while prompt and prompt.Parent and prompt.Enabled and (tick() - startTime < 1.5) do
-                            task.wait(0.1)
-                        end
-                        
-                        root.CFrame = riftSafeZoneCFrame
-                        task.wait(1.0)
+                    if root then
+                        root.CFrame = originalCFrame
                     end
                 end
-            end
+            end)
             
-            task.wait(0.2)
+            task.wait(1.8)
+            task.wait(0.8)
         end
         
         activeRiftFarmThreads[levelNum] = nil
     end)
 end
--- PART 4 of 5: Steal a Cheese Hub
+
 local function unlockHubFeatures()
     buildRarityMap()
 
@@ -494,8 +427,9 @@ local function unlockHubFeatures()
         "Level 1", "Level 2", "Level 3", "Level 4",
         "Level 5", "Level 6", "Level 7", "Level 8",
         "Level 9", "Level 10", "Level 11", "Level 12"
-   }
-      local moonLevelOptions = {
+    }
+
+    local moonLevelOptions = {
         "Level 1", "Level 2", "Level 3", "Level 4",
         "Level 5", "Level 6", "Level 7", "Level 8"
     }
@@ -510,8 +444,8 @@ local function unlockHubFeatures()
         "Common", "Uncommon", "Rare", "Epic",
         "Legendary", "Mythic", "Divine", "Ancient",
         "Cosmic", "Golden"
-   }
--- PART 5 of 5: Steal a Cheese Hub
+    }
+
     FarmTab:CreateDropdown({
        Name = "Filter by Rarity",
        Options = rarityOptions,
@@ -667,7 +601,7 @@ local function unlockHubFeatures()
            local char = Players.LocalPlayer.Character
            local root = char and char:FindFirstChild("HumanoidRootPart")
            if root then
-               root.CFrame = earthSafeZoneCFrame
+               root.CFrame = CFrame.new(0, 3, 37.5)
            end
        end,
     })
@@ -678,7 +612,7 @@ local function unlockHubFeatures()
            local char = Players.LocalPlayer.Character
            local root = char and char:FindFirstChild("HumanoidRootPart")
            if root then
-               root.CFrame = moonSafeZoneCFrame
+               root.CFrame = CFrame.new(0, 3, 20455)
            end
        end,
     })
@@ -689,7 +623,7 @@ local function unlockHubFeatures()
            local char = Players.LocalPlayer.Character
            local root = char and char:FindFirstChild("HumanoidRootPart")
            if root then
-               root.CFrame = riftSafeZoneCFrame
+               root.CFrame = CFrame.new(6000, 4, 9002)
            end
        end,
     })
