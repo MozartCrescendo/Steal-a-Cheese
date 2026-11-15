@@ -80,10 +80,10 @@ local function isRarityAllowed(prompt)
         return true
     end
 
-    local riftFolder = workspace:FindFirstChild("Dimension") and workspace.Dimension:FindFirstChild("Rift")
+    local dimensionFolder = workspace.World:FindFirstChild("Dimension")
     local packageModel = prompt.Parent
-    while packageModel and packageModel.Parent and packageModel.Parent ~= workspace.World.Levels and packageModel.Parent ~= workspace.World.Craters and packageModel.Parent ~= riftFolder do
-        if packageModel.Name:match("Package") then
+    while packageModel and packageModel.Parent and packageModel.Parent ~= workspace.World.Levels and packageModel.Parent ~= workspace.World.Craters and packageModel.Parent ~= dimensionFolder do
+        if packageModel.Name:match("Package") or packageModel.Name:match("Wrapped") then
             break
         end
         packageModel = packageModel.Parent
@@ -116,7 +116,7 @@ local function isRarityAllowed(prompt)
     return false
 end
 
--- Earth Farming Loop (Bulletproofed with pcall and safe root validation)
+-- Earth Farming Loop
 local function startEarthFarming(levelNum)
     if activeEarthFarmThreads[levelNum] then return end
     
@@ -172,7 +172,6 @@ local function startEarthFarming(levelNum)
                 end
             end)
             
-            -- Stealth cooldown buffer to let cat guards calm down
             task.wait(1.8)
             task.wait(0.8)
         end
@@ -181,7 +180,7 @@ local function startEarthFarming(levelNum)
     end)
 end
 
--- Moon Farming Loop (Bulletproofed)
+-- Moon Farming Loop
 local function startMoonFarming(levelNum)
     if activeMoonFarmThreads[levelNum] then return end
     
@@ -246,7 +245,7 @@ local function startMoonFarming(levelNum)
     end)
 end
 
--- Rift Farming Loop (Bulletproofed)
+-- Rift Farming Loop (Corrected Path: Workspace.World.Dimension.Rift01.Guards...)
 local function startRiftFarming(levelNum)
     if activeRiftFarmThreads[levelNum] then return end
     
@@ -255,17 +254,16 @@ local function startRiftFarming(levelNum)
         
         while activeRiftFarms[levelNum] do
             local riftFolderName = string.format("Rift%02d", levelNum)
-            local dimensionFolder = workspace:FindFirstChild("Dimension")
-            local riftFolder = dimensionFolder and dimensionFolder:FindFirstChild("Rift")
-            local levelFolder = riftFolder and riftFolder:FindFirstChild(riftFolderName)
+            local dimensionFolder = workspace.World:FindFirstChild("Dimension")
+            local riftLevelFolder = dimensionFolder and dimensionFolder:FindFirstChild(riftFolderName)
             
-            if not levelFolder then
+            if not riftLevelFolder then
                 task.wait(2)
                 continue
             end
 
             local foundPrompt = nil
-            for _, descendant in ipairs(levelFolder:GetDescendants()) do
+            for _, descendant in ipairs(riftLevelFolder:GetDescendants()) do
                 if descendant:IsA("ProximityPrompt") and descendant.Name == "StealPrompt" and descendant.Enabled then
                     if isRarityAllowed(descendant) then
                         foundPrompt = descendant
